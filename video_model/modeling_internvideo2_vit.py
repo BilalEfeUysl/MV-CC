@@ -26,6 +26,27 @@ try:
 except:
      logger.warn(f'DropoutAddRMSNorm of flash_attn is not installed!!!')
 
+class FlashAttention(nn.Module):
+    def __init__(self, attention_dropout=0.0):
+        super().__init__()
+        self.dropout_p = attention_dropout
+
+    def forward(self, qkv, key_padding_mask=None, need_weights=False, causal=False):
+        q, k, v = qkv.unbind(2)
+        q = q.transpose(1, 2)
+        k = k.transpose(1, 2)
+        v = v.transpose(1, 2)
+
+        context = F.scaled_dot_product_attention(
+            q, k, v, 
+            attn_mask=None,
+            dropout_p=self.dropout_p if self.training else 0.0,
+            is_causal=causal
+        )
+        
+        context = context.transpose(1, 2)
+        return context, None
+
 import numpy as np
 import torch
 import logging
@@ -679,10 +700,8 @@ class PretrainVisionTransformer_clean(nn.Module):
 
         self.x_vis_only = x_vis_only
 
-        if use_fused_rmsnorm:
-            norm_layer_for_blocks = partial(RMSNorm, eps=1e-6)
-        else:
-            norm_layer_for_blocks = partial(RMSNorm, eps=1e-6)
+        # use_fused_rmsnorm ayrımını kaldırarak her halükarda normal RMSNorm kullanıyoruz
+        norm_layer_for_blocks = partial(RMSNorm, eps=1e-6)
         self.norm_layer_for_blocks = norm_layer_for_blocks
         self.patch_embed = PatchEmbed(
             img_size, patch_size, in_chans, embed_dim,
