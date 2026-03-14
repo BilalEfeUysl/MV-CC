@@ -1,0 +1,7 @@
+checkpoints/
+__pycache__/
+*.pth
+*.pt
+*.mp4
+*.safetensors
+*.bin
