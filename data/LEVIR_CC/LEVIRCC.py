@@ -212,7 +212,7 @@ class LEVIRCCDataset(Dataset):
 
 if __name__ == '__main__':
     
-    train_dataset = LEVIRCCDataset(data_folder='/root/Data/LEVIR-MCI-dataset/images',
+    train_dataset = LEVIRCCDataset(data_folder='./Data/LEVIR-MCI-dataset/images',
                                    list_path='./data/LEVIR_CC1/', split='train', token_folder=None)
     train_loader = DataLoader(dataset=train_dataset,batch_size=1,shuffle=False,pin_memory=True)
     channels_sumA,channel_squared_sumA,channels_sumB,channel_squared_sumB = 0,0,0,0
