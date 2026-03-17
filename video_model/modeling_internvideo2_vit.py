@@ -31,6 +31,20 @@ class FusedMLP(nn.Module):
         x = self.fc2(x)
         return x
 
+class DropoutAddRMSNormBypass(nn.Module):
+    def __init__(self, dim, eps=1e-6, **kwargs):
+        super().__init__()
+        # Dosyada zaten var olan RMSNorm sınıfını kullanıyoruz
+        self.norm = RMSNorm(dim, eps=eps)
+
+    def forward(self, x, residual=None, **kwargs):
+        if residual is not None:
+            x = x + residual
+        residual = x
+        out = self.norm(x)
+        return out, residual
+
+
 try:
      from flash_attn.ops.rms_norm import DropoutAddRMSNorm
 except:
@@ -710,8 +724,8 @@ class PretrainVisionTransformer_clean(nn.Module):
 
         self.x_vis_only = x_vis_only
 
-        # use_fused_rmsnorm ayrımını kaldırarak her halükarda normal RMSNorm kullanıyoruz
-        norm_layer_for_blocks = partial(RMSNorm, eps=1e-6)
+        # use_fused_rmsnorm ayrımını kaldırarak kılıf (bypass) RMSNorm kullanıyoruz
+        norm_layer_for_blocks = partial(DropoutAddRMSNormBypass, eps=1e-6)
         self.norm_layer_for_blocks = norm_layer_for_blocks
         self.patch_embed = PatchEmbed(
             img_size, patch_size, in_chans, embed_dim,
