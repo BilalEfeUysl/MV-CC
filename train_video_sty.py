@@ -104,8 +104,8 @@ def main(args):
             video_encoder_optimizer.zero_grad()
             sty_fusion_optimizer.zero_grad()
 
-            video_tensor=video_tensor.cuda()
-            mask=mask.cuda()
+            video_tensor=video_tensor.to(dtype=torch.bfloat16, device='cuda')
+            mask=mask.to(dtype=torch.bfloat16, device='cuda')
             vedie_emb,_=video_encoder(video_tensor)
             vedie_emb=sty_fusion(vedie_emb,mask)
 
@@ -159,8 +159,8 @@ def main(args):
         with torch.no_grad():
             # Batches
             for ind, (video_tensor, token_all, token_all_len, _, _, _,mask) in enumerate(val_loader):
-                video_tensor=video_tensor.cuda()
-                mask=mask.cuda()
+                video_tensor=video_tensor.to(dtype=torch.bfloat16, device='cuda')
+                mask=mask.to(dtype=torch.bfloat16, device='cuda')
                 vedie_emb,_=video_encoder(video_tensor)
                 vedie_emb=sty_fusion(vedie_emb,mask)
                 token_all = token_all.squeeze(0).cuda()
