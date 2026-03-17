@@ -249,9 +249,7 @@ class Video_encoder(nn.Module):
         C = image_embeds.shape[-1]
         image_embeds = image_embeds.reshape(batch_size, -1, C)
         
-
-        return self.att_liner(image_embeds.float()),image_embeds.float()
-                
+        return self.att_liner(image_embeds.to(self.att_liner.weight.dtype)), image_embeds
     
 class Sty_fusion(nn.Module):
     """
