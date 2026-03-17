@@ -90,6 +90,7 @@ def main(args):
     l_resizeA = torch.nn.Upsample(size = (256, 256), mode ='bilinear', align_corners = True)
     l_resizeB = torch.nn.Upsample(size = (256, 256), mode ='bilinear', align_corners = True)
     index_i = 0
+    step_checkpoint_paths = []  # Son 3 ara kaydı takip etmek için
     hist = np.zeros((args.num_epochs * len(train_loader), 3))
     # Epochs
     
@@ -137,7 +138,28 @@ def main(args):
             hist[index_i,0] = time.time() - start_time #batch_time        
             hist[index_i,1] = loss.item() #train_loss
             hist[index_i,2] = accuracy(scores, targets, 5) #top5
-            index_i += 1   
+            index_i += 1
+
+            # Ara kayıt mekanizması (her save_steps adımda bir)
+            if index_i % args.save_steps == 0:
+                os.makedirs('./checkpoints', exist_ok=True)
+                step_ckpt_name = f'checkpoint_step_{index_i}.pth'
+                step_ckpt_path = os.path.join('./checkpoints', step_ckpt_name)
+                torch.save({
+                    'step': index_i,
+                    'epoch': epoch,
+                    'video_encoder_dict': video_encoder.state_dict(),
+                    'sty_fusion_dict':    sty_fusion.state_dict(),
+                    'decoder_dict':       decoder.state_dict(),
+                }, step_ckpt_path)
+                print(f'[ARA KAYIT] {step_ckpt_path} kaydedildi.')
+                # Sadece son 3 ara kaydı tut, eskisini sil
+                step_checkpoint_paths.append(step_ckpt_path)
+                if len(step_checkpoint_paths) > 3:
+                    old = step_checkpoint_paths.pop(0)
+                    if os.path.exists(old):
+                        os.remove(old)
+                        print(f'[ARA KAYIT] Eski checkpoint silindi: {old}')
             # Print status
             if index_i % args.print_freq == 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
@@ -243,6 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpu_id', type=int, default=0, help='gpu id in the training.')
     parser.add_argument('--checkpoint', default=None, help='path to checkpoint, None if none.')
     parser.add_argument('--print_freq',type=int, default=100, help='print training/validation stats every __ batches')
+    parser.add_argument('--save_steps', type=int, default=5000, help='Save intermediate checkpoint every N steps.')
     # Training parameters
     parser.add_argument('--fine_tune_encoder', type=bool, default=True, help='whether fine-tune encoder or not')    
     parser.add_argument('--train_batchsize', type=int, default=32, help='batch_size for training')
