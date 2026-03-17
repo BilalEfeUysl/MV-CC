@@ -278,7 +278,7 @@ class LEVIRCCDataset_video(Dataset):
                 video_file = os.path.join(
                     data_folder + '/' + split + '/video_data/' + name.split('.')[0] + '.mp4')
                 img_fileB = img_fileA.replace('A', 'B')
-                img_file_mask = img_fileA.replace('A', f'{mask_mode}')
+                img_file_mask = img_fileA.replace('A', 'label')
                 token_id = name.split('-')[-1]
                 if token_folder is not None:
                     token_file = os.path.join(token_folder + name.split('.')[0] + '.txt')
@@ -297,7 +297,7 @@ class LEVIRCCDataset_video(Dataset):
             for name in self.img_ids:
                 img_fileA = os.path.join(data_folder + '/' + split +'/A/' + name)
                 img_fileB = img_fileA.replace('A', 'B')
-                img_file_mask = img_fileA.replace('A', f'{mask_mode}')
+                img_file_mask = img_fileA.replace('A', 'label')
                 video_file = os.path.join(
                     data_folder + '/' + split + '/video_data/' + name.split('.')[0] + '.mp4')
                 token_id = None
@@ -318,7 +318,7 @@ class LEVIRCCDataset_video(Dataset):
             for name in self.img_ids:
                 img_fileA = os.path.join(data_folder + '/' + split +'/A/' + name)
                 img_fileB = img_fileA.replace('A', 'B')
-                img_file_mask = img_fileA.replace('A', f'{mask_mode}')
+                img_file_mask = img_fileA.replace('A', 'label')
                 video_file = os.path.join(
                     data_folder + '/' + split + '/video_data/' + name.split('.')[0] + '.mp4')
                 token_id = None
