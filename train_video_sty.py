@@ -67,9 +67,9 @@ def main(args):
                                             lr=args.decoder_lr)
         video_encoder_optimizer = torch.optim.Adam(parameters, lr=args.encoder_lr, weight_decay=1e-2)
     # Move to GPU, if available
-    video_encoder.cuda()
-    decoder = decoder.cuda()
-    sty_fusion.cuda()
+    video_encoder = video_encoder.to(dtype=torch.bfloat16).cuda()
+    decoder = decoder.to(dtype=torch.bfloat16).cuda()
+    sty_fusion = sty_fusion.to(dtype=torch.bfloat16).cuda()
     # Loss function
     criterion = torch.nn.CrossEntropyLoss().cuda()
 
