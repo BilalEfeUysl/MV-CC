@@ -432,6 +432,13 @@ class DecoderTransformer_video(nn.Module):
         word_emb = word_emb.transpose(1, 0)#(length, batch, feature_dim)
 
         word_emb = self.position_encoding(word_emb)  # (length, batch, feature_dim)
+        
+        # Olası maske-d_model dtype uyumsuzluğunu (float32 vs bfloat16) zorunlu cata tabi tutma
+        if mask is not None and mask.is_floating_point():
+            mask = mask.to(dtype=word_emb.dtype)
+        if tgt_pad_mask is not None:
+            tgt_pad_mask = tgt_pad_mask.to(torch.bool)
+            
         # print(word_emb.shape,video.shape)
         pred = self.transformer(word_emb, video, tgt_mask=mask, tgt_key_padding_mask=tgt_pad_mask)  # (length, batch, feature_dim)
         pred = self.wdc(self.dropout(pred))  # (length, batch, vocab_size)
@@ -477,6 +484,13 @@ class DecoderTransformer_video(nn.Module):
 
             word_emb = self.position_encoding(word_emb)
             # print(video.shape,word_emb.shape)
+            
+            # Olası maske-d_model dtype uyumsuzluğunu (float32 vs bfloat16) zorunlu cata tabi tutma
+            if mask is not None and mask.is_floating_point():
+                mask = mask.to(dtype=word_emb.dtype)
+            if tgt_pad_mask is not None:
+                tgt_pad_mask = tgt_pad_mask.to(torch.bool)
+                
             pred = self.transformer(word_emb, video, tgt_mask=mask, tgt_key_padding_mask=tgt_pad_mask)
 
             pred = self.wdc(self.dropout(pred))  # (length, batch, vocab_size)
