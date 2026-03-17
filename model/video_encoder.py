@@ -242,6 +242,10 @@ class Video_encoder(nn.Module):
         
         image_embeds = self.model(video_tensor, use_image=use_image)
        
+        # Eğer RMS bypass kılıfı sayesinde (out, residual) şeklinde tuple dönerse
+        if isinstance(image_embeds, tuple):
+            image_embeds = image_embeds[0]
+
         C = image_embeds.shape[-1]
         image_embeds = image_embeds.reshape(batch_size, -1, C)
         
