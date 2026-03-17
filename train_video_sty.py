@@ -113,7 +113,6 @@ def main(args):
             token = token.squeeze(1).cuda()
             token_len = token_len.cuda()
 
-            vedie_emb = vedie_emb.float()  # Decoder float32 bekliyor
             scores, caps_sorted, decode_lengths, sort_ind = decoder(vedie_emb, token, token_len)
             
             # Since we decoded starting with <start>, the targets are all words after <start>, up to <end>
@@ -189,7 +188,6 @@ def main(args):
                 token_all = token_all.squeeze(0).cuda()
                 # Forward prop.
                 
-                vedie_emb = vedie_emb.float()  # Decoder float32 bekliyor
                 seq = decoder.sample(vedie_emb, k=1)
                 img_token = token_all.tolist()
                 img_tokens = list(map(lambda c: [w for w in c if w not in {word_vocab['<START>'], word_vocab['<END>'], word_vocab['<NULL>']}],
