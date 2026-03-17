@@ -16,10 +16,20 @@ try:
      from .flash_attention_class import FlashAttention
 except:
      logger.warn(f'flash_attn is not installed, you can install it by `pip install flash_attn` ')
-try:
-     from flash_attn.modules.mlp import FusedMLP
-except:
-     logger.warn(f'FusedMLP of flash_attn is not installed!!!')
+class FusedMLP(nn.Module):
+    def __init__(self, in_features, hidden_features=None, out_features=None, heuristic=None):
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
+        self.fc1 = nn.Linear(in_features, hidden_features)
+        self.act = nn.GELU()
+        self.fc2 = nn.Linear(hidden_features, out_features)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.act(x)
+        x = self.fc2(x)
+        return x
 
 try:
      from flash_attn.ops.rms_norm import DropoutAddRMSNorm
