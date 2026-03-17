@@ -13,7 +13,7 @@ from torchvision import transforms
 decord.bridge.set_bridge("torch")
 import sys
 # Bizim Google Drive'daki model klasörümüzün yolu
-your_library_path = '/content/drive/MyDrive/AraProje/MV-CC/video_model'
+your_library_path = '/content/MV-CC/video_model'
 sys.path.append(your_library_path)
 
 # Modeli oluşturacağımız İSKELET sınıfını çağırıyoruz
