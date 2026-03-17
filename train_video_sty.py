@@ -8,7 +8,6 @@ import argparse
 import json
 #import torchvision.transforms as transforms
 from data.LEVIR_CC.LEVIRCC import LEVIRCCDataset_video
-from data.Dubai_CC.DubaiCC import DubaiCCDataset
 from model.model_encoder import Encoder, AttentiveEncoder
 from model.model_decoder import DecoderTransformer_video
 from utils import *
@@ -84,14 +83,8 @@ def main(args):
             LEVIRCCDataset_video(args.data_folder, args.list_path, 'val', args.token_folder,
                                  args.vocab_file, args.max_length, args.allow_unk, if_mask=True, mask_mode=args.mode),
             batch_size=args.val_batchsize, shuffle=False, num_workers=args.workers, pin_memory=True)
-    elif args.data_name == 'Dubai_CC':
-        train_loader = data.DataLoader(
-            DubaiCCDataset(args.data_folder, args.list_path, 'train', args.token_folder, args.vocab_file, args.max_length, args.allow_unk),
-            batch_size=args.train_batchsize, shuffle=True, num_workers=args.workers, pin_memory=True)
-        val_loader = data.DataLoader(
-            DubaiCCDataset(args.data_folder, args.list_path, 'val', args.token_folder, args.vocab_file, args.max_length, args.allow_unk),
-            batch_size=args.val_batchsize, shuffle=False, num_workers=args.workers, pin_memory=True)
-    
+    else:
+        raise ValueError(f"Sadece LEVIR_CC desteklenmektedir. Sağlanan data_name: {args.data_name}")
 
     decoder_lr_scheduler = torch.optim.lr_scheduler.StepLR(decoder_optimizer, step_size=5, gamma=0.5)
     l_resizeA = torch.nn.Upsample(size = (256, 256), mode ='bilinear', align_corners = True)
