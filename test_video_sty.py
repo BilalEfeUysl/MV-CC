@@ -40,14 +40,13 @@ def main(args):
     decoder.load_state_dict(checkpoint['decoder_dict'])
     sty_fusion.load_state_dict(checkpoint['sty_fusion_dict'])
     
-    # Move to GPU, if available
-    sty_fusion=sty_fusion.cuda()
+    # Move to GPU with bfloat16 (eğitimle tutarlı dtype)
+    sty_fusion = sty_fusion.to(dtype=torch.bfloat16).cuda()
     sty_fusion.eval()
-    video_encoder = video_encoder.cuda()
+    video_encoder = video_encoder.to(dtype=torch.bfloat16).cuda()
     video_encoder.eval()
-    video_encoder = video_encoder.cuda()
+    decoder = decoder.to(dtype=torch.bfloat16).cuda()
     decoder.eval()
-    decoder = decoder.cuda()
 
     # Custom dataloaders
     if args.data_name == 'LEVIR_CC':
