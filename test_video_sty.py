@@ -5,7 +5,6 @@ from torch.utils import data
 import argparse
 import json
 from data.LEVIR_CC.LEVIRCC import LEVIRCCDataset,LEVIRCCDataset_video
-from data.Dubai_CC.DubaiCC import DubaiCCDataset
 from model.model_encoder import Encoder, AttentiveEncoder
 from model.model_decoder import DecoderTransformer,DecoderTransformer_video
 from utils import *
@@ -13,11 +12,6 @@ from model.model_decoder import DecoderTransformer_video
 from model.video_encoder import Video_encoder,Sty_fusion
 from tqdm import tqdm
 import sys
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-your_library_path = '/data/lky/proj/InterVideo/InternVideo2_Chat_8B_InternLM2_5'
-# 添加到sys.path
-sys.path.append(your_library_path)
 
 
 def count_parameters(model):
@@ -64,16 +58,6 @@ def main(args):
         test_loader = data.DataLoader(
             LEVIRCCDataset_video(args.data_folder, args.list_path, 'test', args.token_folder, args.vocab_file, args.max_length, args.allow_unk,if_mask=True,mask_mode=args.mode),
             batch_size=args.test_batchsize, shuffle=False, num_workers=args.workers, pin_memory=True)
-    elif args.data_name == 'Dubai_CC':
-        #Dubai:
-        nochange_list = ["Nothing has changed ", "There is no difference ", "All remained the same "
-                            "Everything remains the same ", "Nothing has changed in this area ", "Nothing changed in this area "
-                            "No changes in this area ", "No change was made ", "There is no change to mention ", "No changes to mention "
-                            "No changed to mention ", "No difference in this area ", "No change to mention "
-                            "No change was made ", "No change occurred in this area ", "The area appears the same "]
-        test_loader = data.DataLoader(
-            DubaiCCDataset(args.data_folder, args.list_path, 'val', args.token_folder, args.vocab_file, args.max_length, args.allow_unk),
-            batch_size=args.test_batchsize, shuffle=False, num_workers=args.workers, pin_memory=True)
     l_resize1 = torch.nn.Upsample(size = (256, 256), mode ='bilinear', align_corners = True)
     l_resize2 = torch.nn.Upsample(size = (256, 256), mode ='bilinear', align_corners = True)
     # Epochs
@@ -92,8 +76,8 @@ def main(args):
         for ind, (video_tensor, token_all, token_all_len, _, _,name, mask) in tqdm(enumerate(test_loader)):
 
             # Move to GPU, if available
-            video_tensor=video_tensor.cuda()
-            mask=mask.cuda()
+            video_tensor=video_tensor.to(dtype=torch.bfloat16, device='cuda')
+            mask=mask.to(dtype=torch.bfloat16, device='cuda')
             vedie_emb,_=video_encoder(video_tensor)
 
             vedie_emb=sty_fusion(vedie_emb,mask)
@@ -188,7 +172,7 @@ if __name__ == '__main__':
 
     # Data parameters
     parser.add_argument(
-        '--data_folder', default='/root/Data/LEVIR-MCI-dataset/images', help='folder with data files')
+        '--data_folder', default='./Data/LEVIR-MCI-dataset/images', help='folder with data files')
     parser.add_argument('--list_path', default='./data/LEVIR_CC/', help='path of the data lists')
     parser.add_argument('--token_folder', default='./data/LEVIR_CC/tokens/', help='folder with token files')
     parser.add_argument('--vocab_file', default='vocab', help='path of the data lists')
