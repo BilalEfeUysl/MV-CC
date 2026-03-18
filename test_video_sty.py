@@ -70,6 +70,7 @@ def main(args):
     change_acc=0
     nochange_acc=0
     print(f'test begin! {len(test_loader)} pictures to test')
+    pred_file = open('./predictions.txt', 'w', encoding='utf-8')
     with torch.no_grad():
         # Batches
         for ind, (video_tensor, token_all, token_all_len, _, _,name, mask) in tqdm(enumerate(test_loader)):
@@ -120,50 +121,58 @@ def main(args):
                 if pred_caption not in nochange_list:
                     change_acc = change_acc+1
 
+            # predictions.txt'e yaz
+            sample_name = name[0] if isinstance(name, (list, tuple)) else str(name)
+            pred_file.write(f'FILE: {sample_name}\n')
+            pred_file.write(f'REF:  {ref_caption.strip()}\n')
+            pred_file.write(f'PRED: {pred_caption.strip()}\n')
+            pred_file.write('-' * 60 + '\n')
 
-        test_time = time.time() - test_start_time
-        # Calculate evaluation scores
 
-        if len(nochange_references)>0:
-            print('nochange_metric:')
-            nochange_metric = get_eval_score(nochange_references, nochange_hypotheses)
-            Bleu_1 = nochange_metric['Bleu_1']
-            Bleu_2 = nochange_metric['Bleu_2']
-            Bleu_3 = nochange_metric['Bleu_3']
-            Bleu_4 = nochange_metric['Bleu_4']
-            Meteor = nochange_metric['METEOR']
-            Rouge = nochange_metric['ROUGE_L']
-            Cider = nochange_metric['CIDEr']
-            print('BLEU-1: {0:.4f}\t' 'BLEU-2: {1:.4f}\t' 'BLEU-3: {2:.4f}\t' 
-                  'BLEU-4: {3:.4f}\t' 'Rouge: {4:.4f}\t' 'Meteor: {5:.4f}\t' 'Cider: {6:.4f}\t'
-                  .format(Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
-            print("nochange_acc:", nochange_acc / len(nochange_references))
-        if len(change_references)>0:
-            print('change_metric:')
-            change_metric = get_eval_score(change_references, change_hypotheses)
-            Bleu_1 = change_metric['Bleu_1']
-            Bleu_2 = change_metric['Bleu_2']
-            Bleu_3 = change_metric['Bleu_3']
-            Bleu_4 = change_metric['Bleu_4']
-            Meteor = change_metric['METEOR']
-            Rouge = change_metric['ROUGE_L']
-            Cider = change_metric['CIDEr']
-            print('BLEU-1: {0:.4f}\t' 'BLEU-2: {1:.4f}\t' 'BLEU-3: {2:.4f}\t'
-                  'BLEU-4: {3:.4f}\t' 'Rouge: {4:.4f}\t' 'Meteor: {5:.4f}\t' 'Cider: {6:.4f}\t'
-                  .format(Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
-            print("change_acc:", change_acc / len(change_references))
+    pred_file.close()
+    print(f'[KAYIT] Tahmin cümleleri ./predictions.txt dosyasına kaydedildi.')
+    test_time = time.time() - test_start_time
+    # Calculate evaluation scores
+    if len(nochange_references)>0:
+        print('nochange_metric:')
+        nochange_metric = get_eval_score(nochange_references, nochange_hypotheses)
+        Bleu_1 = nochange_metric['Bleu_1']
+        Bleu_2 = nochange_metric['Bleu_2']
+        Bleu_3 = nochange_metric['Bleu_3']
+        Bleu_4 = nochange_metric['Bleu_4']
+        Meteor = nochange_metric['METEOR']
+        Rouge = nochange_metric['ROUGE_L']
+        Cider = nochange_metric['CIDEr']
+        print('BLEU-1: {0:.4f}\t' 'BLEU-2: {1:.4f}\t' 'BLEU-3: {2:.4f}\t' 
+              'BLEU-4: {3:.4f}\t' 'Rouge: {4:.4f}\t' 'Meteor: {5:.4f}\t' 'Cider: {6:.4f}\t'
+              .format(Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
+        print("nochange_acc:", nochange_acc / len(nochange_references))
+    if len(change_references)>0:
+        print('change_metric:')
+        change_metric = get_eval_score(change_references, change_hypotheses)
+        Bleu_1 = change_metric['Bleu_1']
+        Bleu_2 = change_metric['Bleu_2']
+        Bleu_3 = change_metric['Bleu_3']
+        Bleu_4 = change_metric['Bleu_4']
+        Meteor = change_metric['METEOR']
+        Rouge = change_metric['ROUGE_L']
+        Cider = change_metric['CIDEr']
+        print('BLEU-1: {0:.4f}\t' 'BLEU-2: {1:.4f}\t' 'BLEU-3: {2:.4f}\t'
+              'BLEU-4: {3:.4f}\t' 'Rouge: {4:.4f}\t' 'Meteor: {5:.4f}\t' 'Cider: {6:.4f}\t'
+              .format(Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
+        print("change_acc:", change_acc / len(change_references))
 
-        score_dict = get_eval_score(references, hypotheses)
-        Bleu_1 = score_dict['Bleu_1']
-        Bleu_2 = score_dict['Bleu_2']
-        Bleu_3 = score_dict['Bleu_3']
-        Bleu_4 = score_dict['Bleu_4']
-        Meteor = score_dict['METEOR']
-        Rouge = score_dict['ROUGE_L']
-        Cider = score_dict['CIDEr']
-        print('Testing:\n' 'Time: {0:.3f}\t' 'BLEU-1: {1:.4f}\t' 'BLEU-2: {2:.4f}\t' 'BLEU-3: {3:.4f}\t' 
-              'BLEU-4: {4:.4f}\t' 'Rouge: {5:.4f}\t' 'Meteor: {6:.4f}\t' 'Cider: {7:.4f}\t'
-              .format(test_time, Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
+    score_dict = get_eval_score(references, hypotheses)
+    Bleu_1 = score_dict['Bleu_1']
+    Bleu_2 = score_dict['Bleu_2']
+    Bleu_3 = score_dict['Bleu_3']
+    Bleu_4 = score_dict['Bleu_4']
+    Meteor = score_dict['METEOR']
+    Rouge = score_dict['ROUGE_L']
+    Cider = score_dict['CIDEr']
+    print('Testing:\n' 'Time: {0:.3f}\t' 'BLEU-1: {1:.4f}\t' 'BLEU-2: {2:.4f}\t' 'BLEU-3: {3:.4f}\t' 
+          'BLEU-4: {4:.4f}\t' 'Rouge: {5:.4f}\t' 'Meteor: {6:.4f}\t' 'Cider: {7:.4f}\t'
+          .format(test_time, Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
 
 
 if __name__ == '__main__':
