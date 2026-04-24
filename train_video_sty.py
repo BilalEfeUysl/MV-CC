@@ -1,9 +1,6 @@
 import time
 import os
 import numpy as np
-import csv
-import pandas as pd
-import matplotlib.pyplot as plt
 import torch.optim
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils import data
@@ -27,14 +24,6 @@ def main(args):
         os.makedirs(args.savepath)
     best_bleu4 = 0.4  # BLEU-4 score right now
     start_epoch = 0
-    
-    # CSV Logging initialization
-    csv_file = os.path.join(args.savepath, 'training_progress.csv')
-    if not os.path.exists(csv_file):
-        with open(csv_file, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Epoch', 'Step', 'Train_Loss', 'Val_Loss', 'Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4', 'CIDEr'])
-
     with open(os.path.join(args.list_path + args.vocab_file + '.json'), 'r') as f:
         word_vocab = json.load(f)
     # Initialize / load checkpoint  2644246
@@ -173,48 +162,13 @@ def main(args):
                         print(f'[ARA KAYIT] Eski checkpoint silindi: {old}')
             # Print status
             if index_i % args.print_freq == 0:
-                cur_train_loss = np.mean(hist[index_i-args.print_freq:index_i-1,1])
                 print('Epoch: [{0}][{1}/{2}]\t'
                     'Batch Time: {3:.3f}\t'
                     'Loss: {4:.4f}\t'
                     'Top-5 Accuracy: {5:.3f}'.format(epoch, index_i, args.num_epochs*len(train_loader),
                                             np.mean(hist[index_i-args.print_freq:index_i-1,0])*args.print_freq,
-                                            cur_train_loss,
+                                            np.mean(hist[index_i-args.print_freq:index_i-1,1]),
                                             np.mean(hist[index_i-args.print_freq:index_i-1,2])))
-
-                # Hızlı (Otomatik) Validation Loss Hesabı
-                video_encoder.eval()
-                sty_fusion.eval()
-                decoder.eval()
-                v_loss_sum = 0.0
-                v_steps = 0
-                with torch.no_grad():
-                    for _, (v_tensor, _, _, v_tok, v_tok_len, _, v_mask) in enumerate(val_loader):
-                        v_tensor = v_tensor.to(dtype=torch.bfloat16, device='cuda')
-                        v_mask = v_mask.to(dtype=torch.bfloat16, device='cuda')
-                        v_emb, _ = video_encoder(v_tensor)
-                        v_emb = sty_fusion(v_emb, v_mask)
-                        try:
-                            v_tok = v_tok.squeeze(1).cuda()
-                            v_tok_len = v_tok_len.cuda()
-                            v_sc, v_caps, v_dec_len, _ = decoder(v_emb, v_tok, v_tok_len)
-                            v_tgts = v_caps[:, 1:]
-                            v_sc_pack = pack_padded_sequence(v_sc, v_dec_len, batch_first=True).data
-                            v_tg_pack = pack_padded_sequence(v_tgts, v_dec_len, batch_first=True).data
-                            v_loss = criterion(v_sc_pack, v_tg_pack)
-                            v_loss_sum += v_loss.item()
-                            v_steps += 1
-                        except Exception:
-                            pass
-                cur_val_loss = v_loss_sum / max(1, v_steps)
-                print(f"      [Val Loss] Step {index_i} icin Doğrulama Kaybı: {cur_val_loss:.4f}")
-                video_encoder.train()
-                sty_fusion.train()
-                decoder.train()
-
-                with open(csv_file, mode='a', newline='', encoding='utf-8') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([epoch, index_i, cur_train_loss, cur_val_loss, '', '', '', '', ''])
 
         # One epoch's validation
         decoder.eval()  # eval mode (no dropout or batchnorm)
@@ -271,11 +225,6 @@ def main(args):
                   'BLEU-4: {4:.4f}\t' 'Rouge: {5:.4f}\t' 'Meteor: {6:.4f}\t', 'Cider: {7:.4f}\t'
                   .format(val_time, Bleu_1, Bleu_2, Bleu_3, Bleu_4, Rouge, Meteor, Cider))
         
-        # Log epoch results to CSV
-        with open(csv_file, mode='a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow([epoch, index_i, '', '', Bleu_1, Bleu_2, Bleu_3, Bleu_4, Cider])
-
         #Adjust learning rate
         decoder_lr_scheduler.step()
    
@@ -290,52 +239,6 @@ def main(args):
             model_name = 'MV_CC'+str(args.data_name)+'_batchsize_'+str(args.train_batchsize)+'_'+str(args.network)+'Bleu_4_'+str(round(10000*Bleu_4))+'.pth'
             torch.save(state, os.path.join(args.savepath, model_name))
             print(os.path.join(args.savepath, model_name))
-
-    print("Eğitim tamamlandı. Eğitim eğrisi (Loss & Metrics) grafikleri oluşturuluyor...")
-    try:
-        plot_learning_curves(csv_file, args.savepath)
-    except Exception as e:
-        print(f"Grafik cizim hatasi: {e}")
-
-def plot_learning_curves(csv_path, savepath):
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    if not os.path.exists(csv_path):
-        return
-    df = pd.read_csv(csv_path)
-    
-    # NaN değerleri boş dizeye değil float olarak almak için filtreliyoruz
-    df_loss = df.dropna(subset=['Train_Loss', 'Val_Loss'])
-    df_metrics = df.dropna(subset=['Bleu_4'])
-    
-    # 1. Loss Curve
-    if len(df_loss) > 0:
-        plt.figure(figsize=(10, 6))
-        plt.plot(df_loss['Step'], df_loss['Train_Loss'], marker='o', markersize=4, color='crimson', label='Train Loss (Aralık: 0 - Sonsuz)')
-        plt.plot(df_loss['Step'], df_loss['Val_Loss'], marker='x', markersize=4, color='royalblue', label='Validation Loss (Sık Aralıklarla)')
-        plt.title('Training ve Validation Loss Eğrisi (Düştükçe İyidir)')
-        plt.xlabel('Eğitim Adımı (Step)')
-        plt.ylabel('Kayıp (Loss)')
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.legend()
-        plt.savefig(os.path.join(savepath, 'loss_curve.png'))
-        plt.close()
-
-    # 2. Metrics Curve
-    if len(df_metrics) > 0:
-        plt.figure(figsize=(10, 6))
-        plt.plot(df_metrics['Epoch'], df_metrics['Bleu_1'].astype(float), marker='^', label='BLEU-1 (Hedef Dağılım: 0.0 - 1.0)')
-        plt.plot(df_metrics['Epoch'], df_metrics['Bleu_4'].astype(float), marker='v', label='BLEU-4 (Hedef Dağılım: 0.0 - 1.0)')
-        plt.plot(df_metrics['Epoch'], df_metrics['CIDEr'].astype(float), marker='s', label='CIDEr (Hedef Dağılım: 0.0 - ~10.0+)')
-        plt.title('Validation Metrik Eğrisi (Epoch Bazlı, Yükseldikçe İyidir)')
-        plt.xlabel('Epoch (Tur)')
-        plt.ylabel('Skor')
-        max_cider = df_metrics['CIDEr'].astype(float).max()
-        plt.ylim(0, max(1.1, max_cider + 0.5))
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.legend()
-        plt.savefig(os.path.join(savepath, 'metrics_curve.png'))
-        plt.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remote_Sensing_Image_Changes_to_Captions')
