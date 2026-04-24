@@ -5,5 +5,3 @@ __pycache__/
 *.mp4
 *.safetensors
 *.bin
-venv/
-graphic/venv/
